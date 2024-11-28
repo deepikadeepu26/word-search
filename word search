@@ -1,0 +1,82 @@
+struct stack {
+    int row, col, index;
+    bool backtrack;
+    struct stack *next;
+};
+
+void push(struct stack **top, int row, int col, int index, bool entry) {
+    struct stack *newElement = (struct stack *)malloc(sizeof(struct stack));
+    newElement->row = row;
+    newElement->col = col;
+    newElement->backtrack = entry;
+    newElement->index = index;
+    newElement->next = *top;
+    *top = newElement;
+}
+
+struct stack *pop(struct stack **top) {
+    struct stack *rmElement = *top;
+    *top = rmElement->next;
+    return rmElement;
+}
+
+bool exist(char** board, int boardSize, int* boardColSize, char * word){
+    int **queue = (int **)malloc(sizeof(int *));
+    int row, col, queueSize = 0;
+
+    /* Save all the first matched letter to save time, 
+    * only iterate through those next */
+    for(row = 0; row < boardSize; row++) {
+        for(col = 0; col < boardColSize[row]; col++) {
+            if(board[row][col] == word[0]) {
+                queue = realloc(queue, (queueSize + 1) * sizeof(int *));
+                queue[queueSize] = (int *)malloc(2 * sizeof(int));
+                queue[queueSize][0] = row;
+                queue[queueSize][1] = col;
+                queueSize++;
+            }
+        }
+    }
+
+    for(int q = 0; q < queueSize; q++) {
+        int currRow, currCol, currIdx;
+        bool bt;
+        /* Build a new stack for each combination */
+        struct stack *myStack = NULL;
+        struct stack *popEntry;
+        int visited[boardSize][boardColSize[0]];
+        memset(visited, 0, sizeof(visited));
+        push(&myStack, queue[q][0], queue[q][1], 0, false);
+        while(myStack) {
+            popEntry = pop(&myStack);
+            currRow = popEntry->row;
+            currCol = popEntry->col;
+            currIdx = popEntry->index;
+            bt = popEntry->backtrack;
+            /* bt is used to remove all the letters which matched till a point, but not all the way through */
+            if(bt) {
+                visited[currRow][currCol] = 0;
+                continue;
+            }
+            visited[currRow][currCol] = 1;
+            push(&myStack, currRow, currCol, currIdx, true);
+            /* Return when all the letters of the word are matched */
+            if(currIdx == strlen(word) - 1)
+                return true;
+
+            /* Check all the 4 diretions now and push it in the stack if there is a match */
+            if(currRow + 1 < boardSize && (visited[currRow + 1][currCol] == 0) && (board[currRow + 1][currCol] == word[currIdx + 1]))
+                push(&myStack, currRow + 1, currCol, currIdx + 1, false);
+
+            if(currRow - 1 >= 0 && (visited[currRow - 1][currCol] == 0) && (board[currRow - 1][currCol] == word[currIdx + 1]))
+                push(&myStack, currRow - 1, currCol, currIdx + 1, false);
+
+            if(currCol + 1 < boardColSize[currRow] && (visited[currRow][currCol + 1] == 0) && (board[currRow][currCol + 1] == word[currIdx + 1]))
+                push(&myStack, currRow, currCol + 1, currIdx + 1, false);
+
+            if(currCol - 1 >= 0 && (visited[currRow][currCol - 1] == 0) && (board[currRow][currCol - 1] == word[currIdx + 1]))
+                push(&myStack, currRow, currCol - 1, currIdx + 1, false);
+        }
+    }
+    return false;
+}
